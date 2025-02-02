@@ -20,7 +20,7 @@ def merge_hdr(images):
 
 # Streamlit UI
 st.title("Open HDR Merger 🌄")
-st.write("Upload 3-7 bracketed exposure images (same resolution)")
+st.write("Upload 3-5 bracketed exposure images (same resolution)")
 
 uploaded_files = st.file_uploader(
     "Choose images (JPG/PNG/TIFF)",
@@ -29,7 +29,7 @@ uploaded_files = st.file_uploader(
 )
 
 if uploaded_files:
-    if 3 <= len(uploaded_files) <= 7:
+    if 3 <= len(uploaded_files) <= 5:
         if st.button("Merge HDR"):
             with st.spinner("Processing..."):
                 try:
@@ -54,10 +54,10 @@ if uploaded_files:
                     st.download_button(
                         label="Download HDR Image (PNG)",
                         data=img_byte_arr.getvalue(),
-                        file_name="hdr_result.png",
+                        file_name="OpenHDRMerge_Output.png",
                         mime="image/png"
                     )
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
     else:
-        st.error("Please upload between 3 and 7 images")
+        st.error("Please upload between 3 and 5 images")

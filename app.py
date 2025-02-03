@@ -20,7 +20,7 @@ def merge_hdr(images):
 
 # Streamlit UI
 st.title("Open HDR Merger 🌄")
-st.write("Upload 3-5 bracketed exposure images (same resolution)")
+st.write("Upload 3-5 bracketed exposure images (same resolution, angle and alignment)")
 st.write("Tool by: Luiz de Marchi - https://github.com/luizdemarchi")
 
 uploaded_files = st.file_uploader(

@@ -2,17 +2,18 @@ let pyodide;
 let uploadedImages = [];
 
 async function initializePyodide() {
+  // Load Pyodide and required packages
   pyodide = await loadPyodide();
-
-  // Load Pyodide-compatible packages
   await pyodide.loadPackage(["numpy", "opencv-python"]);
 
-  // Load your HDR processing script
+  // Load hdr_processor.py into Pyodide's filesystem
+  const response = await fetch('hdr_processor.py');
+  const code = await response.text();
+  pyodide.FS.writeFile('hdr_processor.py', code);
+
+  // Import the module
   await pyodide.runPython(`
-    import js
-    import cv2
-    import numpy as np
-    from js import console
+    from hdr_processor import merge_hdr
   `);
 }
 
@@ -22,7 +23,7 @@ function updateProgress(percentage) {
     progressBar.style.width = `${percentage}%`;
 }
 
-// Read image as Uint8Array
+// Convert uploaded image to Uint8Array
 async function readImageAsArray(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -35,27 +36,17 @@ async function readImageAsArray(file) {
     });
 }
 
-// Track events with CountAPI
+// Google Analytics event tracking (replace G-XXXXXXXXXX with your Measurement ID)
 function trackEvent(eventType) {
-  const eventMap = {
-    pageview: 'page_view',
-    merge_success: 'merge_success',
-    merge_failed: 'merge_failed'
-  };
-  gtag('event', eventMap[eventType]);
+    const eventMap = {
+        pageview: 'page_view',
+        merge_success: 'merge_success',
+        merge_failed: 'merge_failed'
+    };
+    gtag('event', eventMap[eventType]);
 }
 
-// Track page view on load
-trackEvent('pageview');
-
-try {
-  // ... processing logic
-  trackEvent('merge_success');
-} catch (error) {
-  trackEvent('merge_failed');
-}
-
-// Initialize
+// Initialize Pyodide and track page view
 (async function() {
     await initializePyodide();
     trackEvent('pageview');

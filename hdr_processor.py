@@ -6,30 +6,20 @@ def align_images(images):
     if not images:
         return []
 
-    # Align using Enhanced Correlation Coefficient (ECC) on grayscale
     base_gray = cv2.cvtColor(images[0], cv2.COLOR_BGR2GRAY)
     aligned = [images[0]]
-    warp_mode = cv2.MOTION_HOMOGRAPHY  # More robust alignment
+    warp_mode = cv2.MOTION_EUCLIDEAN
 
     for img in images[1:]:
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        warp_matrix = np.eye(3, 3, dtype=np.float32)
+        warp_matrix = np.eye(2, 3, dtype=np.float32)
 
         try:
-            # Find transformation matrix
-            _, warp_matrix = cv2.findTransformECC(
-                base_gray, img_gray,
-                warp_matrix, warp_mode,
-                criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 50, 0.001)
-            )
-            aligned_img = cv2.warpPerspective(
-                img, warp_matrix,
-                (img.shape[1], img.shape[0]),
-                flags=cv2.INTER_LANCZOS4  # High-quality interpolation
-            )
+            _, warp_matrix = cv2.findTransformECC(base_gray, img_gray, warp_matrix, cv2.MOTION_EUCLIDEAN)
+            aligned_img = cv2.warpAffine(img, warp_matrix, (img.shape[1], img.shape[0]))
             aligned.append(aligned_img)
         except:
-            aligned.append(img)  # Fallback
+            aligned.append(img)
 
     return aligned
 
@@ -44,20 +34,18 @@ def merge_hdr(image_data):
     # 2. Align images (BGR format)
     aligned_images = align_images(images)
 
-    # 3. Merge HDR using Mertens (BGR float32 in [0, 1] range)
+    # 3. Merge using Mertens' algorithm (returns float32 in [0,1] range)
     merge_mertens = cv2.createMergeMertens()
-    hdr_linear = merge_mertens.process(aligned_images)
+    hdr_merged = merge_mertens.process(aligned_images)
 
-    # 4. Tone mapping (Reinhard for dynamic range compression)
-    tonemap = cv2.createTonemapReinhard(gamma=2.2)
-    hdr_tonemapped = tonemap.process(hdr_linear)
+    # 4. Convert BGR to RGB while maintaining float32 format
+    hdr_rgb = cv2.cvtColor(hdr_merged, cv2.COLOR_BGR2RGB)
 
-    # 5. Convert BGR to RGB and scale to 8-bit
-    hdr_rgb = (hdr_tonemapped[:, :, [2, 1, 0]] * 255).astype(np.uint8)  # BGR to RGB
+    hdr_rgb = np.power(hdr_rgb, 1 / 2.2)  # Gamma correction
 
-    # 6. Encode as PNG with sRGB profile
-    _, buffer = cv2.imencode('.png', hdr_rgb, [
-        cv2.IMWRITE_PNG_COMPRESSION, 5,
-        cv2.IMWRITE_PNG_SRGB, 1  # Embed sRGB profile
-    ])
+    # 5. Scale to 8-bit and clamp values
+    hdr_8bit = np.clip(hdr_rgb * 255, 0, 255).astype(np.uint8)
+
+    # 6. Encode as PNG
+    _, buffer = cv2.imencode('.png', hdr_8bit, [cv2.IMWRITE_PNG_COMPRESSION, 5])
     return buffer.tobytes()

@@ -5,20 +5,14 @@ async function initializePyodide() {
     pyodide = await loadPyodide();
     await pyodide.loadPackage(["numpy", "opencv-python"]);
 
-    // Load hdr_processor.py
     const response = await fetch('hdr_processor.py');
     const code = await response.text();
     pyodide.FS.writeFile('hdr_processor.py', code);
-
-    // Import the module
-    await pyodide.runPython(`
-        from hdr_processor import merge_hdr
-    `);
+    await pyodide.runPython(`from hdr_processor import merge_hdr`);
 }
 
 function updateProgress(percentage) {
-    const progressBar = document.getElementById('progressBar');
-    progressBar.style.width = `${percentage}%`;
+    document.getElementById('progressBar').style.width = `${percentage}%`;
 }
 
 async function readImageAsArray(file) {
@@ -40,7 +34,6 @@ function trackEvent(eventType) {
     }
 }
 
-// Initialize
 (async function() {
     await initializePyodide();
     trackEvent('pageview');
@@ -52,33 +45,29 @@ document.getElementById('imageUpload').addEventListener('change', (e) => {
 });
 
 document.getElementById('processBtn').addEventListener('click', async () => {
-    try {
-        updateProgress(10);
-        const imageBuffers = await Promise.all(
-            uploadedImages.map(file => readImageAsArray(file))
-        );
-        const pyImages = imageBuffers.map(buf => new Uint8Array(buf));
+    const downloadLink = document.getElementById('downloadLink');
+    downloadLink.hidden = true; // Reset on new attempt
 
-        // Pass to Python
+    try {
+        updateProgress(20);
+        const imageBuffers = await Promise.all(uploadedImages.map(file => readImageAsArray(file)));
+        const pyImages = imageBuffers.map(buf => new Uint8Array(buf));
         pyodide.globals.set("image_data", pyImages);
 
-        updateProgress(30);
-        const result = await pyodide.runPythonAsync(`
-            merge_hdr(image_data)
-        `);
+        updateProgress(50);
+        const result = await pyodide.runPythonAsync(`merge_hdr(image_data)`);
 
         updateProgress(90);
-        const blob = new Blob([result], { type: 'image/tiff' });
-        const downloadLink = document.getElementById('downloadLink');
-        downloadLink.href = URL.createObjectURL(blob);
-        downloadLink.download = 'hdr_result.tiff';
-        downloadLink.hidden = false;
+        const blob = new Blob([new Uint8Array(result)], { type: 'image/png' });
 
         updateProgress(100);
-        setTimeout(() => updateProgress(0), 2000);
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = 'hdr_result.png';
+        downloadLink.hidden = false;
         trackEvent('merge_success');
     } catch (error) {
         updateProgress(0);
+        downloadLink.hidden = true;
         trackEvent('merge_failed');
         alert('Merge failed. Check console for details.');
         console.error(error);

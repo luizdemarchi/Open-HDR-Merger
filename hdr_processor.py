@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 
-
 def align_images(images):
     if not images:
         return []

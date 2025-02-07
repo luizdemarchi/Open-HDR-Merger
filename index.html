@@ -1,30 +1,58 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Open HDR Merger</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-P5TKVF3E49"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-P5TKVF3E49');
-</script>
 <body>
-    <h1>Open HDR Merger</h1>
-    <input type="file" id="imageUpload" multiple accept="image/*">
-    <button id="processBtn" disabled>Start Merging</button>
-    <div class="progress-container">
-        <div id="progressBar" class="progress-bar"></div>
+    <div class="container">
+        <header class="header">
+            <h1>📸 Open HDR Merger</h1>
+            <p class="tagline">Merge bracketed photos into perfect HDR images</p>
+        </header>
+
+        <div class="upload-card">
+            <div class="upload-zone" id="uploadZone">
+                <div class="upload-content">
+                    <div class="drop-message">
+                        <div class="cloud-icon">☁️</div>
+                        <p>Drag & drop photos here<br><em>or</em></p>
+                    </div>
+                    <button class="browse-btn" onclick="document.getElementById('imageUpload').click()">
+                        Browse Files
+                    </button>
+                    <p class="file-requirements">3-7 JPG/PNG photos required</p>
+                </div>
+                <div class="thumbnail-container" id="thumbnailContainer"></div>
+            </div>
+        </div>
+
+        <input type="file" id="imageUpload" multiple accept="image/*" hidden>
+
+        <div class="action-buttons">
+            <button id="processBtn" class="process-btn" disabled>
+                <span class="btn-icon">✨</span> Create HDR
+            </button>
+            <button id="newBatchBtn" class="new-batch-btn">
+                <span class="btn-icon">🔄</span> Start Over
+            </button>
+        </div>
+
+        <div class="status-indicators">
+            <div id="spinner" class="spinner"></div>
+            <div id="initLoading" class="spinner init-spinner"></div>
+            <a id="downloadLink" class="download-link" hidden>
+                <span class="download-icon">⬇️</span> Download HDR Image
+            </a>
+        </div>
     </div>
-    <div id="status"></div>
-    <a id="downloadLink" hidden>Download HDR Image (PNG)</a>
-    <footer>
-        <p>Created by <a href="https://github.com/luizdemarchi" target="_blank">Luiz de Marchi</a></p>
+
+    <footer class="footer">
+        <p>Created with ❤️ by <a href="https://github.com/luizdemarchi" target="_blank">Luiz de Marchi</a></p>
     </footer>
+
     <script src="https://cdn.jsdelivr.net/pyodide/v0.21.3/full/pyodide.js"></script>
     <script src="app.js"></script>
 </body>

@@ -8,7 +8,7 @@ let uploadedImages = [];
  */
 async function initializePyodide() {
   try {
-    updateSpinner(true);
+    // Do not hide the processing indicator until merge processing is complete.
     pyodide = await loadPyodide();
     await pyodide.loadPackage(["numpy", "opencv-python"]);
 
@@ -20,27 +20,21 @@ async function initializePyodide() {
   } catch (err) {
     console.error("Pyodide initialization failed", err);
     alert("Failed to initialize Pyodide. Please refresh the page and try again.");
-  } finally {
-    updateSpinner(false);
   }
 }
 
 /**
- * Updates the progress bar.
- * @param {number} percentage - The current progress percentage.
+ * Shows the processing indicator (spinner and text).
  */
-function updateProgress(percentage) {
-  document.getElementById('progressBar').style.width = `${percentage}%`;
+function showProcessingIndicator() {
+  document.getElementById('processingIndicator').hidden = false;
 }
 
 /**
- * Shows or hides the spinner.
- * @param {boolean} show - Whether to show the spinner.
+ * Hides the processing indicator (spinner and text).
  */
-function updateSpinner(show) {
-  const spinner = document.getElementById('spinner');
-  spinner.hidden = !show;
-  spinner.innerText = ""; // Ensure no text is displayed in the spinner
+function hideProcessingIndicator() {
+  document.getElementById('processingIndicator').hidden = true;
 }
 
 /**
@@ -58,17 +52,35 @@ async function readImageAsArray(file) {
 }
 
 /**
- * Tracks events with Google Analytics.
+ * Tracks custom events with Google Analytics.
+ * The following event types are supported:
+ * - "pageview"
+ * - "upload_images"
+ * - "create_hdr_click"
+ * - "merge_success"
+ * - "merge_failed"
+ * - "new_batch"
+ * - "download_click"
  * @param {string} eventType - The type of event.
  */
 function trackEvent(eventType) {
   if (typeof gtag !== 'undefined') {
     const eventMap = {
-      pageview: 'page_view',
-      merge_success: 'merge_success',
-      merge_failed: 'merge_failed'
+      pageview: { action: 'page_view', category: 'Page', label: 'Home Page' },
+      upload_images: { action: 'upload_images', category: 'Images', label: 'User Uploaded Images' },
+      create_hdr_click: { action: 'create_hdr_click', category: 'HDR Processing', label: 'Create HDR Button Click' },
+      merge_success: { action: 'merge_success', category: 'HDR Processing', label: 'Merge Successful' },
+      merge_failed: { action: 'merge_failed', category: 'HDR Processing', label: 'Merge Failed' },
+      new_batch: { action: 'new_batch', category: 'Batch', label: 'New Batch Click' },
+      download_click: { action: 'download_click', category: 'Download', label: 'Download HDR Image Click' }
     };
-    gtag('event', eventMap[eventType]);
+    const evt = eventMap[eventType];
+    if (evt) {
+      gtag('event', evt.action, {
+        'event_category': evt.category,
+        'event_label': evt.label
+      });
+    }
   }
 }
 
@@ -121,9 +133,14 @@ function validateFileCount() {
 function handleDrop(e) {
   e.preventDefault();
   const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+  // Append the new files to the existing list
   uploadedImages = uploadedImages.concat(files);
   updateThumbnails();
   validateFileCount();
+  // Track image upload event (you might want to count this per batch or per file)
+  if (files.length > 0) {
+    trackEvent('upload_images');
+  }
 }
 
 function handleDragOver(e) {
@@ -137,9 +154,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // File selection via click on the drop area
   const imageUpload = document.getElementById('imageUpload');
   imageUpload.addEventListener('change', (e) => {
-    uploadedImages = Array.from(e.target.files);
+    const newFiles = Array.from(e.target.files);
+    // Append newly selected files instead of replacing
+    uploadedImages = uploadedImages.concat(newFiles);
     updateThumbnails();
     validateFileCount();
+    if (newFiles.length > 0) {
+      trackEvent('upload_images');
+    }
   });
 
   // Drag-and-drop area
@@ -153,55 +175,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Merge (Create HDR) button
   document.getElementById('processBtn').addEventListener('click', async () => {
-    updateSpinner(true);
-    updateProgress(20);
-    // Small delay so that the progress bar updates immediately.
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Hide the Create HDR button immediately upon clicking.
+    document.getElementById('processBtn').hidden = true;
+    trackEvent('create_hdr_click');
+    showProcessingIndicator();
 
     if (!isPyodideInitialized) {
       await initializePyodide();
     }
-    updateProgress(30);
 
     try {
-      updateProgress(40);
       const imageBuffers = await Promise.all(uploadedImages.map(file => readImageAsArray(file)));
       const pyImages = imageBuffers.map(buf => new Uint8Array(buf));
       pyodide.globals.set("image_data", pyImages);
 
-      updateProgress(60);
       const result = await pyodide.runPythonAsync(`merge_hdr(image_data)`);
-      updateProgress(80);
 
       const blob = new Blob([new Uint8Array(result)], { type: 'image/png' });
-      updateProgress(100);
       const downloadLink = document.getElementById('downloadLink');
       downloadLink.href = URL.createObjectURL(blob);
       downloadLink.download = 'hdr_result.png';
       downloadLink.hidden = false;
-
-      // Hide the Create HDR button after a successful merge.
-      document.getElementById('processBtn').hidden = true;
 
       // Show the New Batch button to allow resetting the workflow.
       document.getElementById('newBatchBtn').hidden = false;
 
       trackEvent('merge_success');
     } catch (error) {
-      updateProgress(0);
+      // Re-show the Create HDR button if an error occurs.
+      document.getElementById('processBtn').hidden = false;
       document.getElementById('downloadLink').hidden = true;
       trackEvent('merge_failed');
       alert('Merge failed. Please try again.');
       console.error(error);
     } finally {
-      updateSpinner(false);
+      hideProcessingIndicator();
       // Explicit memory cleanup after merge.
       if (pyodide && pyodide._api && typeof pyodide._api.freeAllocatedMemory === 'function') {
         pyodide._api.freeAllocatedMemory();
       }
       if (pyodide) {
         try {
-          // Instead of clearing sys.modules, use garbage collection.
           await pyodide.runPython("import gc; gc.collect()");
         } catch (err) {
           console.error("Error during memory cleanup", err);
@@ -220,6 +234,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('processBtn').hidden = false;
     document.getElementById('downloadLink').hidden = true;
     document.getElementById('newBatchBtn').hidden = true;
-    updateProgress(0);
+    trackEvent('new_batch');
+  });
+
+  // Optional: Track when the download link is clicked.
+  document.getElementById('downloadLink').addEventListener('click', () => {
+    trackEvent('download_click');
   });
 });

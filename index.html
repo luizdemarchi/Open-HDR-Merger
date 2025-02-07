@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Open HDR Merger ⚡</title>
   <link rel="stylesheet" href="styles.css">
 </head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-P5TKVF3E49"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-P5TKVF3E49');
+</script>
+<!-- End of Google tag (gtag.js) -->
 <body>
   <div class="container">
     <h1>Open HDR Merger ⚡</h1>
@@ -15,25 +24,17 @@
     <div id="thumbnails" class="thumbnails"></div>
     <button id="processBtn" disabled>Create HDR</button>
     <button id="newBatchBtn" hidden>New Batch</button>
-    <div class="progress-container">
-      <div id="progressBar" class="progress-bar"></div>
+    <!-- Processing Indicator: Spinner + Text -->
+    <div id="processingIndicator" class="processing-indicator" hidden>
+      <div id="spinner" class="spinner"></div>
+      <p id="processingText">Processing. Wait a moment...</p>
     </div>
-    <div id="spinner" class="spinner" hidden></div>
     <a id="downloadLink" class="download-link" hidden>Download HDR Image (PNG)</a>
     <div id="status"></div>
   </div>
   <footer>
     <p>Created by <a href="https://github.com/luizdemarchi" target="_blank">Luiz de Marchi</a></p>
   </footer>
-
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-P5TKVF3E49"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-P5TKVF3E49');
-  </script>
 
   <!-- Pyodide and App Script -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.21.3/full/pyodide.js"></script>

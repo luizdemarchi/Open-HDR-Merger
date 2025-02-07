@@ -1,181 +1,219 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize UI state
-    document.getElementById('spinner').style.display = 'none';
-    document.getElementById('initLoading').style.display = 'none';
-    document.getElementById('downloadLink').hidden = true;
-});
-
 let pyodide = null;
+let isPyodideInitialized = false;
 let uploadedImages = [];
-let isProcessing = false;
 
-// DOM Elements
-const uploadZone = document.getElementById('uploadZone');
-const fileInput = document.getElementById('imageUpload');
-const thumbnailContainer = document.getElementById('thumbnailContainer');
-const processBtn = document.getElementById('processBtn');
-const newBatchBtn = document.getElementById('newBatchBtn');
-const downloadLink = document.getElementById('downloadLink');
-const spinner = document.getElementById('spinner');
-const initSpinner = document.getElementById('initLoading');
-
-// Initialize Pyodide on first merge attempt
+/**
+ * Initializes Pyodide and loads necessary packages.
+ * Deferred until the user initiates merging.
+ */
 async function initializePyodide() {
-    initSpinner.style.display = 'block';
-    try {
-        pyodide = await loadPyodide();
-        await pyodide.loadPackage(["numpy", "opencv-python"]);
+  try {
+    updateSpinner(true, "Initializing Pyodide...");
+    pyodide = await loadPyodide();
+    await pyodide.loadPackage(["numpy", "opencv-python"]);
 
-        // Load HDR processor code
-        const response = await fetch('hdr_processor.py');
-        const code = await response.text();
-        pyodide.FS.writeFile('hdr_processor.py', code);
-        await pyodide.runPython(`from hdr_processor import merge_hdr`);
-    } finally {
-        initSpinner.style.display = 'none';
-    }
+    const response = await fetch('hdr_processor.py');
+    const code = await response.text();
+    pyodide.FS.writeFile('hdr_processor.py', code);
+    await pyodide.runPython(`from hdr_processor import merge_hdr`);
+    isPyodideInitialized = true;
+  } catch (err) {
+    console.error("Pyodide initialization failed", err);
+    alert("Failed to initialize Pyodide. Please refresh the page and try again.");
+  } finally {
+    updateSpinner(false);
+  }
 }
 
-// Process HDR merge
-async function processMerge() {
-    if (!pyodide) await initializePyodide();
-    if (isProcessing || !isValidImageCount()) return;
-
-    isProcessing = true;
-    downloadLink.hidden = true; // Force hide at start
-    newBatchBtn.style.display = 'none';
-    showSpinner(true);
-
-    try {
-        // Convert images to Uint8Arrays
-        const imageBuffers = await Promise.all(
-            uploadedImages.map(file => readImageAsArray(file))
-        );
-        const pyImages = imageBuffers.map(buf => new Uint8Array(buf));
-
-        // Process HDR merge
-        pyodide.globals.set("image_data", pyImages);
-        const result = await pyodide.runPythonAsync(`merge_hdr(image_data)`);
-
-        // Create downloadable PNG
-        const blob = new Blob([new Uint8Array(result)], { type: 'image/png' });
-        const objectURL = URL.createObjectURL(blob);
-
-        downloadLink.href = objectURL;
-        downloadLink.download = `hdr_result_${Date.now()}.png`;
-        downloadLink.hidden = false;
-        newBatchBtn.style.display = 'inline-block';
-    } catch (error) {
-        console.error('Merge failed:', error);
-        alert('Merge failed. Please check console for details.');
-        downloadLink.hidden = true; // Ensure hidden on error
-    } finally {
-        isProcessing = false;
-        showSpinner(false);
-        // Cleanup
-        pyodide._api.freeAllocatedMemory();
-        pyodide.runPython("import sys; sys.modules.clear()");
-    }
+/**
+ * Updates the progress bar.
+ * @param {number} percentage - The current progress percentage.
+ */
+function updateProgress(percentage) {
+  document.getElementById('progressBar').style.width = `${percentage}%`;
 }
 
-// UI Helpers
-function showSpinner(show) {
-    spinner.style.display = show ? 'block' : 'none';
+/**
+ * Shows or hides the spinner with optional text.
+ * @param {boolean} show - Whether to show the spinner.
+ * @param {string} text - Optional text to display inside the spinner.
+ */
+function updateSpinner(show, text = "") {
+  const spinner = document.getElementById('spinner');
+  if (show) {
+    spinner.hidden = false;
+    spinner.innerText = text;
+  } else {
+    spinner.hidden = true;
+    spinner.innerText = "";
+  }
 }
 
+/**
+ * Reads an image file as an ArrayBuffer.
+ * @param {File} file - The image file.
+ * @returns {Promise<ArrayBuffer>}
+ */
 async function readImageAsArray(file) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.readAsArrayBuffer(file);
-    });
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (err) => reject(err);
+    reader.readAsArrayBuffer(file);
+  });
 }
 
-// Drag-and-Drop Handlers
-uploadZone.addEventListener('click', () => fileInput.click());
-
-uploadZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadZone.classList.add('dragover');
-});
-
-uploadZone.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    uploadZone.classList.remove('dragover');
-});
-
-uploadZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadZone.classList.remove('dragover');
-    if (e.dataTransfer.files.length > 0) {
-        handleFiles(e.dataTransfer.files);
-    }
-});
-
-// File Input Handler
-fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-        handleFiles(e.target.files);
-    }
-});
-
-// Handle uploaded files
-function handleFiles(files) {
-    uploadedImages = Array.from(files);
-    updateThumbnails();
-    processBtn.disabled = !isValidImageCount();
-    fileInput.value = ''; // Clear input after handling
+/**
+ * Tracks events with Google Analytics.
+ * @param {string} eventType - The type of event.
+ */
+function trackEvent(eventType) {
+  if (typeof gtag !== 'undefined') {
+    const eventMap = {
+      pageview: 'page_view',
+      merge_success: 'merge_success',
+      merge_failed: 'merge_failed'
+    };
+    gtag('event', eventMap[eventType]);
+  }
 }
 
-// Update thumbnail previews
+/**
+ * Updates the thumbnail previews for the uploaded images.
+ */
 function updateThumbnails() {
-    thumbnailContainer.innerHTML = '';
+  const thumbnailsContainer = document.getElementById('thumbnails');
+  thumbnailsContainer.innerHTML = "";
+  uploadedImages.forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const thumbDiv = document.createElement('div');
+      thumbDiv.className = 'thumbnail';
 
-    uploadedImages.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'thumbnail-wrapper';
-            wrapper.innerHTML = `
-                <div style="position:relative; margin:5px;">
-                    <img src="${e.target.result}"
-                         class="thumbnail"
-                         alt="${file.name}">
-                    <div class="delete-thumbnail"
-                         data-index="${index}"
-                         title="Remove image">×</div>
-                </div>
-            `;
-            thumbnailContainer.appendChild(wrapper);
-        };
-        reader.readAsDataURL(file);
-    });
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.alt = file.name;
 
-    // Add delete functionality
-    document.querySelectorAll('.delete-thumbnail').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const index = parseInt(e.target.dataset.index);
-            uploadedImages.splice(index, 1);
-            updateThumbnails();
-            processBtn.disabled = !isValidImageCount();
-        });
-    });
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-btn';
+      delBtn.innerText = '✖';
+      delBtn.addEventListener('click', () => {
+        uploadedImages.splice(index, 1);
+        updateThumbnails();
+        validateFileCount();
+      });
+
+      thumbDiv.appendChild(img);
+      thumbDiv.appendChild(delBtn);
+      thumbnailsContainer.appendChild(thumbDiv);
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
-// Validate image count
-function isValidImageCount() {
-    return uploadedImages.length >= 3 && uploadedImages.length <= 7;
-}
-
-// New Batch Handler
-newBatchBtn.addEventListener('click', () => {
-    uploadedImages = [];
-    fileInput.value = ''; // Clear file input
-    updateThumbnails();
+/**
+ * Validates the number of uploaded images and enables/disables the merge button.
+ */
+function validateFileCount() {
+  const processBtn = document.getElementById('processBtn');
+  if (uploadedImages.length >= 3 && uploadedImages.length <= 7) {
+    processBtn.disabled = false;
+  } else {
     processBtn.disabled = true;
-    downloadLink.hidden = true;
-    newBatchBtn.style.display = 'none';
-});
+  }
+}
 
-// Event Listeners
-processBtn.addEventListener('click', processMerge);
+/* Drag-and-Drop Event Handlers */
+function handleDrop(e) {
+  e.preventDefault();
+  const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+  uploadedImages = uploadedImages.concat(files);
+  updateThumbnails();
+  validateFileCount();
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+}
+
+/* DOMContentLoaded: Setup event listeners */
+document.addEventListener('DOMContentLoaded', () => {
+  trackEvent('pageview');
+
+  // File selection via "Browse"
+  const imageUpload = document.getElementById('imageUpload');
+  imageUpload.addEventListener('change', (e) => {
+    uploadedImages = Array.from(e.target.files);
+    updateThumbnails();
+    validateFileCount();
+  });
+
+  // Drag-and-drop area
+  const dropArea = document.getElementById('dropArea');
+  dropArea.addEventListener('dragover', handleDragOver);
+  dropArea.addEventListener('drop', handleDrop);
+
+  // Merge (Create HDR) button
+  document.getElementById('processBtn').addEventListener('click', async () => {
+    updateSpinner(true, "Processing images...");
+    updateProgress(20);
+
+    // Load Pyodide on first merge attempt
+    if (!isPyodideInitialized) {
+      await initializePyodide();
+    }
+
+    try {
+      updateProgress(40);
+      const imageBuffers = await Promise.all(uploadedImages.map(file => readImageAsArray(file)));
+      const pyImages = imageBuffers.map(buf => new Uint8Array(buf));
+      pyodide.globals.set("image_data", pyImages);
+
+      updateProgress(60);
+      const result = await pyodide.runPythonAsync(`merge_hdr(image_data)`);
+      updateProgress(80);
+
+      const blob = new Blob([new Uint8Array(result)], { type: 'image/png' });
+      updateProgress(100);
+      const downloadLink = document.getElementById('downloadLink');
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = 'hdr_result.png';
+      downloadLink.hidden = false;
+
+      // Show the New Batch button to allow resetting the workflow
+      document.getElementById('newBatchBtn').hidden = false;
+
+      trackEvent('merge_success');
+    } catch (error) {
+      updateProgress(0);
+      document.getElementById('downloadLink').hidden = true;
+      trackEvent('merge_failed');
+      alert('Merge failed. Please try again.');
+      console.error(error);
+    } finally {
+      updateSpinner(false);
+      // Explicit memory cleanup after merge
+      if (pyodide && pyodide._api && typeof pyodide._api.freeAllocatedMemory === 'function') {
+        pyodide._api.freeAllocatedMemory();
+      }
+      if (pyodide) {
+        try {
+          await pyodide.runPython("import sys; sys.modules.clear()");
+        } catch (err) {
+          console.error("Error during memory cleanup", err);
+        }
+      }
+    }
+  });
+
+  // New Batch button resets the UI to initial state
+  document.getElementById('newBatchBtn').addEventListener('click', () => {
+    uploadedImages = [];
+    document.getElementById('imageUpload').value = "";
+    document.getElementById('thumbnails').innerHTML = "";
+    document.getElementById('processBtn').disabled = true;
+    document.getElementById('downloadLink').hidden = true;
+    document.getElementById('newBatchBtn').hidden = true;
+    updateProgress(0);
+  });
+});

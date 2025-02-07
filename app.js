@@ -8,7 +8,7 @@ let uploadedImages = [];
  */
 async function initializePyodide() {
   try {
-    updateSpinner(true, "Initializing Pyodide...");
+    updateSpinner(true);
     pyodide = await loadPyodide();
     await pyodide.loadPackage(["numpy", "opencv-python"]);
 
@@ -34,19 +34,13 @@ function updateProgress(percentage) {
 }
 
 /**
- * Shows or hides the spinner with optional text.
+ * Shows or hides the spinner.
  * @param {boolean} show - Whether to show the spinner.
- * @param {string} text - Optional text to display inside the spinner.
  */
-function updateSpinner(show, text = "") {
+function updateSpinner(show) {
   const spinner = document.getElementById('spinner');
-  if (show) {
-    spinner.hidden = false;
-    spinner.innerText = text;
-  } else {
-    spinner.hidden = true;
-    spinner.innerText = "";
-  }
+  spinner.hidden = !show;
+  spinner.innerText = ""; // Remove any text from the spinner
 }
 
 /**
@@ -155,13 +149,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Merge (Create HDR) button
   document.getElementById('processBtn').addEventListener('click', async () => {
-    updateSpinner(true, "Processing images...");
+    updateSpinner(true);
     updateProgress(20);
 
-    // Load Pyodide on first merge attempt
     if (!isPyodideInitialized) {
       await initializePyodide();
     }
+    // Immediately update progress even if Pyodide is already loaded.
+    updateProgress(30);
 
     try {
       updateProgress(40);
@@ -180,7 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
       downloadLink.download = 'hdr_result.png';
       downloadLink.hidden = false;
 
-      // Show the New Batch button to allow resetting the workflow
+      // Hide the Create HDR button after a successful merge.
+      document.getElementById('processBtn').hidden = true;
+
+      // Show the New Batch button to allow resetting the workflow.
       document.getElementById('newBatchBtn').hidden = false;
 
       trackEvent('merge_success');
@@ -192,13 +190,14 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error(error);
     } finally {
       updateSpinner(false);
-      // Explicit memory cleanup after merge
+      // Explicit memory cleanup after merge.
       if (pyodide && pyodide._api && typeof pyodide._api.freeAllocatedMemory === 'function') {
         pyodide._api.freeAllocatedMemory();
       }
       if (pyodide) {
         try {
-          await pyodide.runPython("import sys; sys.modules.clear()");
+          // Instead of clearing sys.modules, use garbage collection.
+          await pyodide.runPython("import gc; gc.collect()");
         } catch (err) {
           console.error("Error during memory cleanup", err);
         }
@@ -206,12 +205,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // New Batch button resets the UI to initial state
+  // New Batch button resets the UI to its initial state.
   document.getElementById('newBatchBtn').addEventListener('click', () => {
     uploadedImages = [];
     document.getElementById('imageUpload').value = "";
     document.getElementById('thumbnails').innerHTML = "";
     document.getElementById('processBtn').disabled = true;
+    // Unhide the Create HDR button for the new batch.
+    document.getElementById('processBtn').hidden = false;
     document.getElementById('downloadLink').hidden = true;
     document.getElementById('newBatchBtn').hidden = true;
     updateProgress(0);

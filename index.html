@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Open HDR Merger</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <title>Open HDR Merger ⚡</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-P5TKVF3E49"></script>
@@ -10,22 +11,33 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-P5TKVF3E49');
 </script>
+<!-- End of Google tag (gtag.js) -->
 <body>
-    <h1>Open HDR Merger</h1>
-    <input type="file" id="imageUpload" multiple accept="image/*">
-    <button id="processBtn" disabled>Start Merging</button>
-    <div class="progress-container">
-        <div id="progressBar" class="progress-bar"></div>
+  <div class="container">
+    <h1>Open HDR Merger ⚡</h1>
+    <div id="dropArea" class="drop-area">
+      <p>Drag & drop 3–7 images here or <span class="file-label">browse</span></p>
+      <input type="file" id="imageUpload" multiple accept="image/*">
     </div>
+    <div id="thumbnails" class="thumbnails"></div>
+    <button id="processBtn" disabled>Create HDR</button>
+    <button id="newBatchBtn" hidden>New Batch</button>
+    <!-- Processing Indicator: Spinner + Text -->
+    <div id="processingIndicator" class="processing-indicator" hidden>
+      <div id="spinner" class="spinner"></div>
+      <p id="processingText">Processing. Wait a moment...</p>
+    </div>
+    <a id="downloadLink" class="download-link" hidden>Download HDR Image (PNG)</a>
     <div id="status"></div>
-    <a id="downloadLink" hidden>Download HDR Image (PNG)</a>
-    <footer>
-        <p>Created by <a href="https://github.com/luizdemarchi" target="_blank">Luiz de Marchi</a></p>
-    </footer>
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.21.3/full/pyodide.js"></script>
-    <script src="app.js"></script>
+  </div>
+  <footer>
+    <p>Created by <a href="https://github.com/luizdemarchi" target="_blank">Luiz de Marchi</a></p>
+  </footer>
+
+  <!-- Pyodide and App Script -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.21.3/full/pyodide.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

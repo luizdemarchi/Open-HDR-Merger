@@ -2,13 +2,51 @@ let pyodide = null;
 let isPyodideInitialized = false;
 let uploadedImages = [];
 
+/*
+ * Global error handling to catch fatal Pyodide errors.
+ * (These handlers may not always be triggered if Pyodide crashes before JavaScript can catch them.)
+ */
+window.addEventListener('error', (event) => {
+  if (event.message && event.message.includes("Pyodide has suffered a fatal error")) {
+    console.error("Fatal Pyodide error caught (global error):", event.message);
+    const processingText = document.getElementById('processingText');
+    const spinner = document.getElementById('spinner');
+    if (processingText) {
+      processingText.innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+    }
+    if (spinner) {
+      spinner.hidden = true;
+    }
+    document.getElementById('newBatchBtn').hidden = false;
+    isPyodideInitialized = false;
+    event.preventDefault();
+  }
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason && event.reason.message && event.reason.message.includes("Pyodide has suffered a fatal error")) {
+    console.error("Fatal Pyodide error caught (unhandled rejection):", event.reason.message);
+    const processingText = document.getElementById('processingText');
+    const spinner = document.getElementById('spinner');
+    if (processingText) {
+      processingText.innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+    }
+    if (spinner) {
+      spinner.hidden = true;
+    }
+    document.getElementById('newBatchBtn').hidden = false;
+    isPyodideInitialized = false;
+    event.preventDefault();
+  }
+});
+
 /**
  * Initializes Pyodide and loads necessary packages.
- * Deferred until the user initiates merging.
+ * Deferred until the user initiates merging or when reloading is needed.
  */
 async function initializePyodide() {
   try {
-    // Do not hide the processing indicator until merge processing is complete.
+    // Reload the Python libs
     pyodide = await loadPyodide();
     await pyodide.loadPackage(["numpy", "opencv-python"]);
 
@@ -38,6 +76,22 @@ function hideProcessingIndicator() {
 }
 
 /**
+ * Resets the processing indicator to its default state:
+ * - Shows the spinner.
+ * - Sets the default processing text.
+ */
+function resetProcessingIndicator() {
+  const spinner = document.getElementById('spinner');
+  const processingText = document.getElementById('processingText');
+  if (spinner) {
+    spinner.hidden = false;
+  }
+  if (processingText) {
+    processingText.innerText = "Processing. Wait a moment...";
+  }
+}
+
+/**
  * Reads an image file as an ArrayBuffer.
  * @param {File} file - The image file.
  * @returns {Promise<ArrayBuffer>}
@@ -53,7 +107,7 @@ async function readImageAsArray(file) {
 
 /**
  * Tracks custom events with Google Analytics.
- * The following event types are supported:
+ * Supported event types:
  * - "pageview"
  * - "upload_images"
  * - "create_hdr_click"
@@ -133,11 +187,10 @@ function validateFileCount() {
 function handleDrop(e) {
   e.preventDefault();
   const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
-  // Append the new files to the existing list
+  // Append new files rather than replacing existing ones
   uploadedImages = uploadedImages.concat(files);
   updateThumbnails();
   validateFileCount();
-  // Track image upload event (you might want to count this per batch or per file)
   if (files.length > 0) {
     trackEvent('upload_images');
   }
@@ -155,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const imageUpload = document.getElementById('imageUpload');
   imageUpload.addEventListener('change', (e) => {
     const newFiles = Array.from(e.target.files);
-    // Append newly selected files instead of replacing
+    // Append newly selected files instead of replacing existing ones
     uploadedImages = uploadedImages.concat(newFiles);
     updateThumbnails();
     validateFileCount();
@@ -175,21 +228,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Merge (Create HDR) button
   document.getElementById('processBtn').addEventListener('click', async () => {
-    // Hide the Create HDR button immediately upon clicking.
+    // Immediately hide the Create HDR button upon clicking.
     document.getElementById('processBtn').hidden = true;
     trackEvent('create_hdr_click');
     showProcessingIndicator();
+    resetProcessingIndicator();
 
     if (!isPyodideInitialized) {
       await initializePyodide();
     }
 
+    let errorOccurred = false;
     try {
       const imageBuffers = await Promise.all(uploadedImages.map(file => readImageAsArray(file)));
       const pyImages = imageBuffers.map(buf => new Uint8Array(buf));
       pyodide.globals.set("image_data", pyImages);
 
-      const result = await pyodide.runPythonAsync(`merge_hdr(image_data)`);
+      // Wrap the merge call in a timeout (15 seconds)
+      const mergePromise = pyodide.runPythonAsync(`merge_hdr(image_data)`);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Merge operation timed out")), 15000);
+      });
+      const result = await Promise.race([mergePromise, timeoutPromise]);
 
       const blob = new Blob([new Uint8Array(result)], { type: 'image/png' });
       const downloadLink = document.getElementById('downloadLink');
@@ -202,14 +262,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
       trackEvent('merge_success');
     } catch (error) {
-      // Re-show the Create HDR button if an error occurs.
-      document.getElementById('processBtn').hidden = false;
-      document.getElementById('downloadLink').hidden = true;
+      errorOccurred = true;
+      // Hide the spinner so that only the error message is visible.
+      document.getElementById('spinner').hidden = true;
+      // Replace the processing text with the error message.
+      document.getElementById('processingText').innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+      // Show the New Batch button.
+      document.getElementById('newBatchBtn').hidden = false;
       trackEvent('merge_failed');
-      alert('Merge failed. Please try again.');
       console.error(error);
+      // Reset Pyodide so that the next batch reloads the libraries.
+      isPyodideInitialized = false;
     } finally {
-      hideProcessingIndicator();
+      if (!errorOccurred) {
+        hideProcessingIndicator();
+      }
       // Explicit memory cleanup after merge.
       if (pyodide && pyodide._api && typeof pyodide._api.freeAllocatedMemory === 'function') {
         pyodide._api.freeAllocatedMemory();
@@ -224,8 +291,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // New Batch button resets the UI to its initial state.
-  document.getElementById('newBatchBtn').addEventListener('click', () => {
+  // New Batch button resets the UI to its initial state and reloads the Python libraries.
+  document.getElementById('newBatchBtn').addEventListener('click', async () => {
+    // Reset file list and UI elements.
     uploadedImages = [];
     imageUpload.value = "";
     document.getElementById('thumbnails').innerHTML = "";
@@ -234,10 +302,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('processBtn').hidden = false;
     document.getElementById('downloadLink').hidden = true;
     document.getElementById('newBatchBtn').hidden = true;
+    // Reset and hide the processing indicator.
+    resetProcessingIndicator();
+    hideProcessingIndicator();
+    // Show the indicator with a reloading message.
+    document.getElementById('processingIndicator').hidden = false;
+    document.getElementById('processingText').innerText = "Reloading libraries...";
+    await initializePyodide();
+    hideProcessingIndicator();
     trackEvent('new_batch');
   });
 
-  // Optional: Track when the download link is clicked.
+  // Track when the download link is clicked.
   document.getElementById('downloadLink').addEventListener('click', () => {
     trackEvent('download_click');
   });

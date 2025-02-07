@@ -40,7 +40,7 @@ function updateProgress(percentage) {
 function updateSpinner(show) {
   const spinner = document.getElementById('spinner');
   spinner.hidden = !show;
-  spinner.innerText = ""; // Remove any text from the spinner
+  spinner.innerText = ""; // Ensure no text is displayed in the spinner
 }
 
 /**
@@ -134,7 +134,7 @@ function handleDragOver(e) {
 document.addEventListener('DOMContentLoaded', () => {
   trackEvent('pageview');
 
-  // File selection via "Browse"
+  // File selection via click on the drop area
   const imageUpload = document.getElementById('imageUpload');
   imageUpload.addEventListener('change', (e) => {
     uploadedImages = Array.from(e.target.files);
@@ -146,16 +146,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const dropArea = document.getElementById('dropArea');
   dropArea.addEventListener('dragover', handleDragOver);
   dropArea.addEventListener('drop', handleDrop);
+  // Make the entire drop area clickable to trigger file selection.
+  dropArea.addEventListener('click', () => {
+    imageUpload.click();
+  });
 
   // Merge (Create HDR) button
   document.getElementById('processBtn').addEventListener('click', async () => {
     updateSpinner(true);
     updateProgress(20);
+    // Small delay so that the progress bar updates immediately.
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     if (!isPyodideInitialized) {
       await initializePyodide();
     }
-    // Immediately update progress even if Pyodide is already loaded.
     updateProgress(30);
 
     try {
@@ -208,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // New Batch button resets the UI to its initial state.
   document.getElementById('newBatchBtn').addEventListener('click', () => {
     uploadedImages = [];
-    document.getElementById('imageUpload').value = "";
+    imageUpload.value = "";
     document.getElementById('thumbnails').innerHTML = "";
     document.getElementById('processBtn').disabled = true;
     // Unhide the Create HDR button for the new batch.

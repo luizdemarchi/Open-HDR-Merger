@@ -70,7 +70,7 @@ body {
   height: 100%;
   object-fit: cover;
 }
-/* Updated delete ("x") button style */
+/* Updated delete ("X") button style */
 .delete-btn {
   position: absolute;
   top: 2px;
@@ -79,10 +79,14 @@ body {
   border: none;
   font-weight: bold;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 24px;
   color: white;
   -webkit-text-stroke: 1px black;
   padding: 2px;
+}
+.delete-btn:hover {
+  background: transparent;
+  outline: none;
 }
 
 /* Buttons */

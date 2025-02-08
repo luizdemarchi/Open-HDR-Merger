@@ -42,7 +42,7 @@ window.addEventListener('unhandledrejection', (event) => {
 
 /**
  * Initializes Pyodide and loads necessary packages.
- * Deferred until the user initiates merging or when reloading is needed.
+ * Deferred until the user initiates merging or when loading is needed.
  */
 async function initializePyodide() {
   try {
@@ -291,8 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // New Batch button resets the UI to its initial state and reloads the Python libraries.
-  document.getElementById('newBatchBtn').addEventListener('click', async () => {
+  // New Batch button resets the UI to its initial state without reloading the libraries immediately.
+  document.getElementById('newBatchBtn').addEventListener('click', () => {
     // Reset file list and UI elements.
     uploadedImages = [];
     imageUpload.value = "";
@@ -305,11 +305,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset and hide the processing indicator.
     resetProcessingIndicator();
     hideProcessingIndicator();
-    // Show the indicator with a reloading message.
-    document.getElementById('processingIndicator').hidden = false;
-    document.getElementById('processingText').innerText = "Reloading libraries...";
-    await initializePyodide();
-    hideProcessingIndicator();
+    // Unload the Python libraries (do not reload them now).
+    isPyodideInitialized = false;
     trackEvent('new_batch');
   });
 

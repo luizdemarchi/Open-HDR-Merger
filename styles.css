@@ -15,18 +15,19 @@ body {
   align-items: center;
 }
 
+/* Container */
 .container {
-  max-width: 800px;
   width: 90%;
+  max-width: 800px;
   margin: 40px auto;
   padding: 20px;
   background-color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border-radius: 8px;
   text-align: center;
 }
 
-/* Drag and Drop Area */
+/* Drop Area */
 .drop-area {
   border: 2px dashed #aaa;
   border-radius: 8px;
@@ -70,7 +71,6 @@ body {
   height: 100%;
   object-fit: cover;
 }
-/* Updated delete ("X") button style */
 .delete-btn {
   position: absolute;
   top: 2px;
@@ -109,7 +109,7 @@ button:hover:not(:disabled) {
   background-color: #45a049;
 }
 
-/* Processing Indicator (Spinner + Text) */
+/* Processing Indicator */
 .processing-indicator {
   margin: 20px 0;
   display: flex;
@@ -121,8 +121,6 @@ button:hover:not(:disabled) {
   font-size: 16px;
   color: #333;
 }
-
-/* Spinner */
 .spinner {
   margin: 20px auto;
   width: 50px;
@@ -159,10 +157,65 @@ footer a {
   text-decoration: none;
 }
 
-/* Responsive */
-@media (max-width: 600px) {
+/* Responsive Styles */
+
+/* For screens up to 768px */
+@media (max-width: 768px) {
+  .container {
+    width: 95%;
+    margin: 20px auto;
+    padding: 15px;
+  }
+  .drop-area {
+    padding: 20px;
+    font-size: 14px;
+  }
   .thumbnail {
     width: 90px;
     height: 90px;
+  }
+  button {
+    padding: 8px 16px;
+    font-size: 0.9em;
+  }
+  .processing-indicator p {
+    font-size: 14px;
+  }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+  }
+  .download-link {
+    padding: 8px 16px;
+    font-size: 0.9em;
+  }
+}
+
+/* For screens up to 480px */
+@media (max-width: 480px) {
+  .drop-area {
+    padding: 15px;
+    font-size: 12px;
+  }
+  .thumbnail {
+    width: 70px;
+    height: 70px;
+  }
+  button {
+    padding: 6px 12px;
+    font-size: 0.8em;
+  }
+  .processing-indicator p {
+    font-size: 12px;
+  }
+  .spinner {
+    width: 35px;
+    height: 35px;
+    border-width: 3px;
+  }
+  .download-link {
+    padding: 6px 12px;
+    font-size: 0.8em;
   }
 }

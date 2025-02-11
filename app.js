@@ -13,6 +13,7 @@ window.addEventListener('error', (event) => {
     const spinner = document.getElementById('spinner');
     if (processingText) {
       processingText.innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+      processingText.focus();
     }
     if (spinner) {
       spinner.hidden = true;
@@ -30,6 +31,7 @@ window.addEventListener('unhandledrejection', (event) => {
     const spinner = document.getElementById('spinner');
     if (processingText) {
       processingText.innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+      processingText.focus();
     }
     if (spinner) {
       spinner.hidden = true;
@@ -62,10 +64,15 @@ async function initializePyodide() {
 }
 
 /**
- * Shows the processing indicator (spinner and text).
+ * Shows the processing indicator (spinner and text) and moves focus to it.
  */
 function showProcessingIndicator() {
-  document.getElementById('processingIndicator').hidden = false;
+  const indicator = document.getElementById('processingIndicator');
+  indicator.hidden = false;
+  const processingText = document.getElementById('processingText');
+  if (processingText) {
+    processingText.focus();
+  }
 }
 
 /**
@@ -157,6 +164,8 @@ function updateThumbnails() {
       const delBtn = document.createElement('button');
       delBtn.className = 'delete-btn';
       delBtn.innerText = '✖';
+      // Set accessibility attribute for delete button
+      delBtn.setAttribute("aria-label", "delete");
       delBtn.addEventListener('click', () => {
         uploadedImages.splice(index, 1);
         updateThumbnails();
@@ -256,6 +265,8 @@ document.addEventListener('DOMContentLoaded', () => {
       downloadLink.href = URL.createObjectURL(blob);
       downloadLink.download = 'hdr_result.png';
       downloadLink.hidden = false;
+      // Move focus to the download link for accessibility
+      downloadLink.focus();
 
       // Show the New Batch button to allow resetting the workflow.
       document.getElementById('newBatchBtn').hidden = false;
@@ -265,8 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
       errorOccurred = true;
       // Hide the spinner so that only the error message is visible.
       document.getElementById('spinner').hidden = true;
-      // Replace the processing text with the error message.
-      document.getElementById('processingText').innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+      // Replace the processing text with the error message and move focus to it.
+      const processingText = document.getElementById('processingText');
+      processingText.innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+      processingText.focus();
       // Show the New Batch button.
       document.getElementById('newBatchBtn').hidden = false;
       trackEvent('merge_failed');

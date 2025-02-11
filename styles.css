@@ -4,9 +4,13 @@
 }
 
 /* Global Styles */
-body {
+html, body {
   margin: 0;
   padding: 0;
+  overflow-x: hidden; /* Evita scroll horizontal */
+}
+
+body {
   font-family: Arial, sans-serif;
   background: linear-gradient(135deg, #f0f4ff, #d9e4ff);
   min-height: 100vh;
@@ -25,6 +29,7 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border-radius: 8px;
   text-align: center;
+  box-sizing: border-box;
 }
 
 /* Drop Area */
@@ -151,15 +156,16 @@ footer {
   margin: 20px 0;
   text-align: center;
   color: #666;
+  font-size: 0.6em;  /* Texto um pouco menor */
 }
 footer a {
   color: #2c3e50;
-  text-decoration: none;
+  text-decoration: underline;  /* Link sublinhado */
 }
 
-/* Responsive Styles */
+/* Responsive Styles for Mobile Screens */
 
-/* For screens up to 768px */
+/* Para telas até 768px */
 @media (max-width: 768px) {
   .container {
     width: 95%;
@@ -192,7 +198,7 @@ footer a {
   }
 }
 
-/* For screens up to 480px */
+/* Para telas até 480px */
 @media (max-width: 480px) {
   .drop-area {
     padding: 15px;
@@ -217,5 +223,39 @@ footer a {
   .download-link {
     padding: 6px 12px;
     font-size: 0.8em;
+  }
+}
+
+/* Para telas muito pequenas, até 320px */
+@media (max-width: 320px) {
+  .container {
+    width: 100%;
+    margin: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  .drop-area {
+    padding: 10px;
+    font-size: 10px;
+  }
+  .thumbnail {
+    width: 60px;
+    height: 60px;
+  }
+  button {
+    padding: 5px 10px;
+    font-size: 0.7em;
+  }
+  .processing-indicator p {
+    font-size: 10px;
+  }
+  .spinner {
+    width: 30px;
+    height: 30px;
+    border-width: 2px;
+  }
+  .download-link {
+    padding: 5px 10px;
+    font-size: 0.7em;
   }
 }

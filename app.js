@@ -13,6 +13,7 @@ window.addEventListener('error', (event) => {
     const spinner = document.getElementById('spinner');
     if (processingText) {
       processingText.innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+      processingText.focus();
     }
     if (spinner) {
       spinner.hidden = true;
@@ -30,6 +31,7 @@ window.addEventListener('unhandledrejection', (event) => {
     const spinner = document.getElementById('spinner');
     if (processingText) {
       processingText.innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+      processingText.focus();
     }
     if (spinner) {
       spinner.hidden = true;
@@ -274,8 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
       errorOccurred = true;
       // Hide the spinner so that only the error message is visible.
       document.getElementById('spinner').hidden = true;
-      // Replace the processing text with the error message.
-      document.getElementById('processingText').innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+      // Replace the processing text with the error message and move focus to it.
+      const processingText = document.getElementById('processingText');
+      processingText.innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+      processingText.focus();
       // Show the New Batch button.
       document.getElementById('newBatchBtn').hidden = false;
       trackEvent('merge_failed');

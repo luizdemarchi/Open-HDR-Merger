@@ -19,7 +19,8 @@
   <div class="container">
     <h1>Open HDR Merger</h1>
     <div id="dropArea" class="drop-area">
-      <p>Drag & drop 3–7 images here or <span class="file-label">browse</span></p>
+      <!-- Added role="link" to the paragraph -->
+      <p role="link">Drag & drop 3–7 images here or <span class="file-label">browse</span></p>
       <input type="file" id="imageUpload" multiple accept="image/*">
     </div>
     <div id="thumbnails" class="thumbnails"></div>
@@ -28,13 +29,15 @@
     <!-- Processing Indicator: Spinner + Text -->
     <div id="processingIndicator" class="processing-indicator" hidden>
       <div id="spinner" class="spinner"></div>
-      <p id="processingText">Processing. Wait a moment...</p>
+      <!-- Added tabindex so this element can receive focus -->
+      <p id="processingText" tabindex="-1">Processing. Wait a moment...</p>
     </div>
-    <a id="downloadLink" class="download-link" hidden>Download HDR Image (PNG)</a>
+    <!-- Added tabindex="0" to the download link for focusability -->
+    <a id="downloadLink" class="download-link" tabindex="0" hidden>Download HDR Image (PNG)</a>
     <div id="status"></div>
   </div>
   <footer>
-    <p>Created by <a href="https://github.com/luizdemarchi" target="_blank">Luiz de Marchi</a></p>
+    <p style="font-size: 0.8em;">Created by <a href="https://github.com/luizdemarchi" target="_blank" style="text-decoration: underline;">Luiz de Marchi</a></p>
   </footer>
 
   <!-- Pyodide and App Script -->

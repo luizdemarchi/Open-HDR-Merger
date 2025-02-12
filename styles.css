@@ -7,7 +7,7 @@
 html, body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden; /* Evita scroll horizontal */
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 body {
@@ -54,6 +54,49 @@ body {
   display: none;
 }
 
+/* Process Buttons */
+.process-buttons {
+  margin-bottom: 20px;
+}
+.process-buttons button {
+  padding: 10px 20px;
+  margin: 10px 5px;
+  border: none;
+  border-radius: 4px;
+  background-color: #4CAF50;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s ease;
+}
+.process-buttons button:disabled {
+  background-color: #9E9E9E;
+  cursor: not-allowed;
+}
+.process-buttons button:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+/* New Batch Button - Restore its style as the others */
+#newBatchBtn {
+  padding: 10px 20px;
+  margin: 10px 5px;
+  border: none;
+  border-radius: 4px;
+  background-color: #4CAF50;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s ease;
+}
+#newBatchBtn:disabled {
+  background-color: #9E9E9E;
+  cursor: not-allowed;
+}
+#newBatchBtn:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
 /* Thumbnails */
 .thumbnails {
   display: flex;
@@ -92,26 +135,6 @@ body {
 .delete-btn:hover {
   background: transparent !important;
   outline: none;
-}
-
-/* Buttons */
-button {
-  padding: 10px 20px;
-  margin: 10px 5px;
-  border: none;
-  border-radius: 4px;
-  background-color: #4CAF50;
-  color: #fff;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.3s ease;
-}
-button:disabled {
-  background-color: #9E9E9E;
-  cursor: not-allowed;
-}
-button:hover:not(:disabled) {
-  background-color: #45a049;
 }
 
 /* Processing Indicator */
@@ -160,12 +183,12 @@ footer {
 }
 footer a {
   color: #2c3e50;
-  text-decoration: underline;  /* Link sublinhado */
+  text-decoration: underline;
 }
 
 /* Responsive Styles for Mobile Screens */
 
-/* Para telas até 768px */
+/* For screens up to 768px */
 @media (max-width: 768px) {
   .container {
     width: 95%;
@@ -180,7 +203,7 @@ footer a {
     width: 90px;
     height: 90px;
   }
-  button {
+  .process-buttons button, #newBatchBtn {
     padding: 8px 16px;
     font-size: 0.9em;
   }
@@ -198,7 +221,7 @@ footer a {
   }
 }
 
-/* Para telas até 480px */
+/* For screens up to 480px */
 @media (max-width: 480px) {
   .drop-area {
     padding: 15px;
@@ -208,7 +231,7 @@ footer a {
     width: 70px;
     height: 70px;
   }
-  button {
+  .process-buttons button, #newBatchBtn {
     padding: 6px 12px;
     font-size: 0.8em;
   }
@@ -226,7 +249,7 @@ footer a {
   }
 }
 
-/* Para telas muito pequenas, até 320px */
+/* For very small screens, up to 320px */
 @media (max-width: 320px) {
   .container {
     width: 100%;
@@ -242,7 +265,7 @@ footer a {
     width: 60px;
     height: 60px;
   }
-  button {
+  .process-buttons button, #newBatchBtn {
     padding: 5px 10px;
     font-size: 0.7em;
   }

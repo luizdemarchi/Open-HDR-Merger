@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Ensure proper scaling on mobile devices -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Open HDR Merger</title>
   <link rel="stylesheet" href="styles.css">
@@ -19,22 +20,26 @@
   <div class="container">
     <h1>Open HDR Merger</h1>
     <div id="dropArea" class="drop-area">
-      <!-- Added role="link" to the paragraph -->
+      <!-- Added role="link" and tabindex for accessibility -->
       <p role="link" tabindex="0">Drag & drop 3–7 bracketed images here or <span class="file-label">browse</span></p>
       <input type="file" id="imageUpload" multiple accept="image/*">
     </div>
+    <!-- Thumbnails appear here -->
     <div id="thumbnails" class="thumbnails"></div>
-    <button id="processBtn" disabled>Create HDR</button>
+    <!-- Two HDR processing buttons -->
+    <div class="process-buttons">
+      <button id="processBtnSimple" disabled>Create HDR (simple)</button>
+      <button id="processBtnClahe" disabled>Create HDR (CLAHE)</button>
+    </div>
     <button id="newBatchBtn" hidden>New Batch</button>
-    <!-- Processing Indicator: Spinner + Text -->
+    <!-- Processing Indicator: Spinner + Text (processingText has tabindex="-1" for programmatic focus) -->
     <div id="processingIndicator" class="processing-indicator" hidden>
       <div id="spinner" class="spinner"></div>
-      <!-- Added tabindex so this element can receive focus -->
       <p id="processingText" tabindex="-1">Processing. Wait a moment...</p>
     </div>
-    <!-- Added tabindex="0" to the download link for focusability -->
+    <!-- Download Link: tabindex="0" for focusability -->
     <a id="downloadLink" class="download-link" tabindex="0" hidden>Download HDR Image (PNG)</a>
-    <div id="status"></div>
+    <div id="status" tabindex="-1"></div>
   </div>
   <footer>
     <p style="font-size: 0.8em;">Created by <a href="https://github.com/luizdemarchi" target="_blank" style="text-decoration: underline;">Luiz de Marchi</a></p>

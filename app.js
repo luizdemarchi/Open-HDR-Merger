@@ -117,7 +117,8 @@ async function readImageAsArray(file) {
  * Supported event types:
  * - "pageview"
  * - "upload_images"
- * - "create_hdr_click"
+ * - "create_hdr_simple"
+ * - "create_hdr_clahe"
  * - "merge_success"
  * - "merge_failed"
  * - "new_batch"
@@ -129,7 +130,8 @@ function trackEvent(eventType) {
     const eventMap = {
       pageview: { action: 'page_view', category: 'Page', label: 'Home Page' },
       upload_images: { action: 'upload_images', category: 'Images', label: 'User Uploaded Images' },
-      create_hdr_click: { action: 'create_hdr_click', category: 'HDR Processing', label: 'Create HDR Button Click' },
+      create_hdr_simple: { action: 'create_hdr_simple', category: 'HDR Processing', label: 'Create HDR (simple) Button Click' },
+      create_hdr_clahe: { action: 'create_hdr_clahe', category: 'HDR Processing', label: 'Create HDR (CLAHE) Button Click' },
       merge_success: { action: 'merge_success', category: 'HDR Processing', label: 'Merge Successful' },
       merge_failed: { action: 'merge_failed', category: 'HDR Processing', label: 'Merge Failed' },
       new_batch: { action: 'new_batch', category: 'Batch', label: 'New Batch Click' },
@@ -164,7 +166,7 @@ function updateThumbnails() {
       const delBtn = document.createElement('button');
       delBtn.className = 'delete-btn';
       delBtn.innerText = '✖';
-      // Set accessibility attribute for delete button
+      // Set accessibility attribute for delete button.
       delBtn.setAttribute("aria-label", "delete");
       delBtn.addEventListener('click', () => {
         uploadedImages.splice(index, 1);
@@ -181,14 +183,17 @@ function updateThumbnails() {
 }
 
 /**
- * Validates the number of uploaded images and enables/disables the merge button.
+ * Validates the number of uploaded images and enables/disables both HDR processing buttons.
  */
 function validateFileCount() {
-  const processBtn = document.getElementById('processBtn');
+  const processBtnSimple = document.getElementById('processBtnSimple');
+  const processBtnClahe = document.getElementById('processBtnClahe');
   if (uploadedImages.length >= 3 && uploadedImages.length <= 7) {
-    processBtn.disabled = false;
+    processBtnSimple.disabled = false;
+    processBtnClahe.disabled = false;
   } else {
-    processBtn.disabled = true;
+    processBtnSimple.disabled = true;
+    processBtnClahe.disabled = true;
   }
 }
 
@@ -196,7 +201,7 @@ function validateFileCount() {
 function handleDrop(e) {
   e.preventDefault();
   const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
-  // Append new files rather than replacing existing ones
+  // Append new files rather than replacing existing ones.
   uploadedImages = uploadedImages.concat(files);
   updateThumbnails();
   validateFileCount();
@@ -209,15 +214,90 @@ function handleDragOver(e) {
   e.preventDefault();
 }
 
+/* Process HDR function */
+async function processHDR(applyClahe) {
+  // Immediately hide both HDR processing buttons upon clicking.
+  document.getElementById('processBtnSimple').hidden = true;
+  document.getElementById('processBtnClahe').hidden = true;
+  // Trigger different events based on the CLAHE flag.
+  if (applyClahe) {
+    trackEvent('create_hdr_clahe');
+  } else {
+    trackEvent('create_hdr_simple');
+  }
+  showProcessingIndicator();
+  resetProcessingIndicator();
+
+  if (!isPyodideInitialized) {
+    await initializePyodide();
+  }
+
+  let errorOccurred = false;
+  try {
+    const imageBuffers = await Promise.all(uploadedImages.map(file => readImageAsArray(file)));
+    const pyImages = imageBuffers.map(buf => new Uint8Array(buf));
+    pyodide.globals.set("image_data", pyImages);
+
+    // Pass the CLAHE flag to the HDR processor.
+    const mergePromise = pyodide.runPythonAsync(`merge_hdr(image_data, ${applyClahe ? "True" : "False"})`);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Merge operation timed out")), 15000);
+    });
+    const result = await Promise.race([mergePromise, timeoutPromise]);
+
+    const blob = new Blob([new Uint8Array(result)], { type: 'image/png' });
+    const downloadLink = document.getElementById('downloadLink');
+    downloadLink.href = URL.createObjectURL(blob);
+    downloadLink.download = 'hdr_result.png';
+    downloadLink.hidden = false;
+    // Move focus to the download link for accessibility.
+    downloadLink.focus();
+
+    // Show the New Batch button to allow resetting the workflow.
+    document.getElementById('newBatchBtn').hidden = false;
+
+    trackEvent('merge_success');
+  } catch (error) {
+    errorOccurred = true;
+    // Hide the spinner so that only the error message is visible.
+    document.getElementById('spinner').hidden = true;
+    // Replace the processing text with the error message and move focus to it.
+    const processingText = document.getElementById('processingText');
+    processingText.innerText = "Couldn't merge. Try again. Make sure images are aligned.";
+    processingText.focus();
+    // Show the New Batch button.
+    document.getElementById('newBatchBtn').hidden = false;
+    trackEvent('merge_failed');
+    console.error(error);
+    // Reset Pyodide so that the next batch reloads the libraries.
+    isPyodideInitialized = false;
+  } finally {
+    if (!errorOccurred) {
+      hideProcessingIndicator();
+    }
+    // Explicit memory cleanup after merge.
+    if (pyodide && pyodide._api && typeof pyodide._api.freeAllocatedMemory === 'function') {
+      pyodide._api.freeAllocatedMemory();
+    }
+    if (pyodide) {
+      try {
+        await pyodide.runPython("import gc; gc.collect()");
+      } catch (err) {
+        console.error("Error during memory cleanup", err);
+      }
+    }
+  }
+}
+
 /* DOMContentLoaded: Setup event listeners */
 document.addEventListener('DOMContentLoaded', () => {
   trackEvent('pageview');
 
-  // File selection via click on the drop area
+  // File selection via click on the drop area.
   const imageUpload = document.getElementById('imageUpload');
   imageUpload.addEventListener('change', (e) => {
     const newFiles = Array.from(e.target.files);
-    // Append newly selected files instead of replacing existing ones
+    // Append newly selected files instead of replacing existing ones.
     uploadedImages = uploadedImages.concat(newFiles);
     updateThumbnails();
     validateFileCount();
@@ -226,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Drag-and-drop area
+  // Drag-and-drop area.
   const dropArea = document.getElementById('dropArea');
   dropArea.addEventListener('dragover', handleDragOver);
   dropArea.addEventListener('drop', handleDrop);
@@ -235,73 +315,12 @@ document.addEventListener('DOMContentLoaded', () => {
     imageUpload.click();
   });
 
-  // Merge (Create HDR) button
-  document.getElementById('processBtn').addEventListener('click', async () => {
-    // Immediately hide the Create HDR button upon clicking.
-    document.getElementById('processBtn').hidden = true;
-    trackEvent('create_hdr_click');
-    showProcessingIndicator();
-    resetProcessingIndicator();
-
-    if (!isPyodideInitialized) {
-      await initializePyodide();
-    }
-
-    let errorOccurred = false;
-    try {
-      const imageBuffers = await Promise.all(uploadedImages.map(file => readImageAsArray(file)));
-      const pyImages = imageBuffers.map(buf => new Uint8Array(buf));
-      pyodide.globals.set("image_data", pyImages);
-
-      // Wrap the merge call in a timeout (15 seconds)
-      const mergePromise = pyodide.runPythonAsync(`merge_hdr(image_data)`);
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Merge operation timed out")), 15000);
-      });
-      const result = await Promise.race([mergePromise, timeoutPromise]);
-
-      const blob = new Blob([new Uint8Array(result)], { type: 'image/png' });
-      const downloadLink = document.getElementById('downloadLink');
-      downloadLink.href = URL.createObjectURL(blob);
-      downloadLink.download = 'hdr_result.png';
-      downloadLink.hidden = false;
-      // Move focus to the download link for accessibility
-      downloadLink.focus();
-
-      // Show the New Batch button to allow resetting the workflow.
-      document.getElementById('newBatchBtn').hidden = false;
-
-      trackEvent('merge_success');
-    } catch (error) {
-      errorOccurred = true;
-      // Hide the spinner so that only the error message is visible.
-      document.getElementById('spinner').hidden = true;
-      // Replace the processing text with the error message and move focus to it.
-      const processingText = document.getElementById('processingText');
-      processingText.innerText = "Couldn't merge. Try again. Make sure images are aligned.";
-      processingText.focus();
-      // Show the New Batch button.
-      document.getElementById('newBatchBtn').hidden = false;
-      trackEvent('merge_failed');
-      console.error(error);
-      // Reset Pyodide so that the next batch reloads the libraries.
-      isPyodideInitialized = false;
-    } finally {
-      if (!errorOccurred) {
-        hideProcessingIndicator();
-      }
-      // Explicit memory cleanup after merge.
-      if (pyodide && pyodide._api && typeof pyodide._api.freeAllocatedMemory === 'function') {
-        pyodide._api.freeAllocatedMemory();
-      }
-      if (pyodide) {
-        try {
-          await pyodide.runPython("import gc; gc.collect()");
-        } catch (err) {
-          console.error("Error during memory cleanup", err);
-        }
-      }
-    }
+  // HDR processing buttons.
+  document.getElementById('processBtnSimple').addEventListener('click', () => {
+    processHDR(false);
+  });
+  document.getElementById('processBtnClahe').addEventListener('click', () => {
+    processHDR(true);
   });
 
   // New Batch button resets the UI to its initial state without reloading the libraries immediately.
@@ -310,9 +329,12 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadedImages = [];
     imageUpload.value = "";
     document.getElementById('thumbnails').innerHTML = "";
-    document.getElementById('processBtn').disabled = true;
-    // Unhide the Create HDR button for the new batch.
-    document.getElementById('processBtn').hidden = false;
+    // Disable both HDR processing buttons.
+    document.getElementById('processBtnSimple').disabled = true;
+    document.getElementById('processBtnClahe').disabled = true;
+    // Unhide both HDR processing buttons for the new batch.
+    document.getElementById('processBtnSimple').hidden = false;
+    document.getElementById('processBtnClahe').hidden = false;
     document.getElementById('downloadLink').hidden = true;
     document.getElementById('newBatchBtn').hidden = true;
     // Reset and hide the processing indicator.

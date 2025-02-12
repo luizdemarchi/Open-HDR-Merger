@@ -123,6 +123,7 @@ async function readImageAsArray(file) {
  * - "merge_failed"
  * - "new_batch"
  * - "download_click"
+ * - "about_open"
  * @param {string} eventType - The type of event.
  */
 function trackEvent(eventType) {
@@ -135,7 +136,8 @@ function trackEvent(eventType) {
       merge_success: { action: 'merge_success', category: 'HDR Processing', label: 'Merge Successful' },
       merge_failed: { action: 'merge_failed', category: 'HDR Processing', label: 'Merge Failed' },
       new_batch: { action: 'new_batch', category: 'Batch', label: 'New Batch Click' },
-      download_click: { action: 'download_click', category: 'Download', label: 'Download HDR Image Click' }
+      download_click: { action: 'download_click', category: 'Download', label: 'Download HDR Image Click' },
+      about_open: { action: 'about_open', category: 'Info', label: 'About section opened' }
     };
     const evt = eventMap[eventType];
     if (evt) {
@@ -349,4 +351,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('downloadLink').addEventListener('click', () => {
     trackEvent('download_click');
   });
+
+  // Setup event listener for the About section.
+  const aboutSection = document.getElementById('aboutSection');
+  if (aboutSection) {
+    aboutSection.addEventListener('toggle', () => {
+      if (aboutSection.open) {
+        trackEvent('about_open');
+      }
+    });
+  }
 });

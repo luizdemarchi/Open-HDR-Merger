@@ -37,9 +37,17 @@
       <div id="spinner" class="spinner"></div>
       <p id="processingText" tabindex="-1">Processing. Wait a moment...</p>
     </div>
-    <!-- Download Link: tabindex="0" for focusability -->
-    <a id="downloadLink" class="download-link" tabindex="0" hidden>Download HDR Image (PNG)</a>
+    <a id="downloadLink" class="download-link" hidden>Download HDR Image (PNG)</a>
     <div id="status" tabindex="-1"></div>
+
+    <!-- Collapsible About Section (centered) -->
+    <details id="aboutSection">
+      <summary>About</summary>
+      <p><strong>HDR and Bracketed Photos:</strong> HDR enhances details in both bright and dark areas, and bracketed images capture different exposures to cover a wide range of light.</p>
+      <p><strong>Simple HDR Merge:</strong> Clicking <em>Create HDR (simple)</em> merges your images into one balanced, natural-looking photo.</p>
+      <p><strong>HDR Merge with CLAHE:</strong> Clicking <em>Create HDR (CLAHE)</em> merges the images and applies CLAHE with a slight saturation boost for enhanced local contrast.</p>
+      <p><strong>Why Use This Tool?</strong> This free, browser-based solution lets you create high-quality HDR images without expensive software.</p>
+    </details>
   </div>
   <footer>
     <p style="font-size: 0.8em;">Created by <a href="https://github.com/luizdemarchi" target="_blank" style="text-decoration: underline;">Luiz de Marchi</a></p>

@@ -7,7 +7,7 @@
 html, body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden; /* Evita scroll horizontal */
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 body {
@@ -54,6 +54,49 @@ body {
   display: none;
 }
 
+/* Process Buttons */
+.process-buttons {
+  margin-bottom: 20px;
+}
+.process-buttons button {
+  padding: 10px 20px;
+  margin: 10px 5px;
+  border: none;
+  border-radius: 4px;
+  background-color: #4CAF50;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s ease;
+}
+.process-buttons button:disabled {
+  background-color: #9E9E9E;
+  cursor: not-allowed;
+}
+.process-buttons button:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+/* New Batch Button */
+#newBatchBtn {
+  padding: 10px 20px;
+  margin: 10px 5px;
+  border: none;
+  border-radius: 4px;
+  background-color: #4CAF50;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s ease;
+}
+#newBatchBtn:disabled {
+  background-color: #9E9E9E;
+  cursor: not-allowed;
+}
+#newBatchBtn:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
 /* Thumbnails */
 .thumbnails {
   display: flex;
@@ -94,26 +137,6 @@ body {
   outline: none;
 }
 
-/* Buttons */
-button {
-  padding: 10px 20px;
-  margin: 10px 5px;
-  border: none;
-  border-radius: 4px;
-  background-color: #4CAF50;
-  color: #fff;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.3s ease;
-}
-button:disabled {
-  background-color: #9E9E9E;
-  cursor: not-allowed;
-}
-button:hover:not(:disabled) {
-  background-color: #45a049;
-}
-
 /* Processing Indicator */
 .processing-indicator {
   margin: 20px 0;
@@ -151,6 +174,26 @@ button:hover:not(:disabled) {
   width: fit-content;
 }
 
+/* About Section */
+#aboutSection {
+  margin: 20px 0;
+  background: #f7f7f7;
+  padding: 15px;
+  border-radius: 4px;
+  text-align: center;  /* Center the content */
+}
+#aboutSection summary {
+  font-weight: bold;
+  font-size: 1em;
+  cursor: pointer;
+  text-align: center;
+}
+#aboutSection p {
+  font-size: 0.95em;
+  margin: 10px 0;
+  text-align: center;
+}
+
 /* Footer */
 footer {
   margin: 20px 0;
@@ -160,12 +203,12 @@ footer {
 }
 footer a {
   color: #2c3e50;
-  text-decoration: underline;  /* Link sublinhado */
+  text-decoration: underline;
 }
 
 /* Responsive Styles for Mobile Screens */
 
-/* Para telas até 768px */
+/* For screens up to 768px */
 @media (max-width: 768px) {
   .container {
     width: 95%;
@@ -180,7 +223,7 @@ footer a {
     width: 90px;
     height: 90px;
   }
-  button {
+  .process-buttons button, #newBatchBtn {
     padding: 8px 16px;
     font-size: 0.9em;
   }
@@ -196,9 +239,12 @@ footer a {
     padding: 8px 16px;
     font-size: 0.9em;
   }
+  #aboutSection summary, #aboutSection p {
+    font-size: 0.9em;
+  }
 }
 
-/* Para telas até 480px */
+/* For screens up to 480px */
 @media (max-width: 480px) {
   .drop-area {
     padding: 15px;
@@ -208,7 +254,7 @@ footer a {
     width: 70px;
     height: 70px;
   }
-  button {
+  .process-buttons button, #newBatchBtn {
     padding: 6px 12px;
     font-size: 0.8em;
   }
@@ -224,9 +270,12 @@ footer a {
     padding: 6px 12px;
     font-size: 0.8em;
   }
+  #aboutSection summary, #aboutSection p {
+    font-size: 0.8em;
+  }
 }
 
-/* Para telas muito pequenas, até 320px */
+/* For very small screens, up to 320px */
 @media (max-width: 320px) {
   .container {
     width: 100%;
@@ -242,7 +291,7 @@ footer a {
     width: 60px;
     height: 60px;
   }
-  button {
+  .process-buttons button, #newBatchBtn {
     padding: 5px 10px;
     font-size: 0.7em;
   }
@@ -256,6 +305,9 @@ footer a {
   }
   .download-link {
     padding: 5px 10px;
+    font-size: 0.7em;
+  }
+  #aboutSection summary, #aboutSection p {
     font-size: 0.7em;
   }
 }

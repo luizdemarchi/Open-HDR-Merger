@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Ensure proper scaling on mobile devices -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Open HDR Merger</title>
   <link rel="stylesheet" href="styles.css">
@@ -19,22 +20,34 @@
   <div class="container">
     <h1>Open HDR Merger</h1>
     <div id="dropArea" class="drop-area">
-      <!-- Added role="link" to the paragraph -->
-      <p role="link" tabindex="0">Drag & drop 3–7 images here or <span class="file-label">browse</span></p>
+      <!-- Added role="link" and tabindex for accessibility -->
+      <p role="link" tabindex="0">Drag & drop 3–7 bracketed images here or <span class="file-label">browse</span></p>
       <input type="file" id="imageUpload" multiple accept="image/*">
     </div>
+    <!-- Thumbnails appear here -->
     <div id="thumbnails" class="thumbnails"></div>
-    <button id="processBtn" disabled>Create HDR</button>
+    <!-- Two HDR processing buttons -->
+    <div class="process-buttons">
+      <button id="processBtnSimple" disabled>Create HDR (simple)</button>
+      <button id="processBtnClahe" disabled>Create HDR (CLAHE)</button>
+    </div>
     <button id="newBatchBtn" hidden>New Batch</button>
-    <!-- Processing Indicator: Spinner + Text -->
+    <!-- Processing Indicator: Spinner + Text (processingText has tabindex="-1" for programmatic focus) -->
     <div id="processingIndicator" class="processing-indicator" hidden>
       <div id="spinner" class="spinner"></div>
-      <!-- Added tabindex so this element can receive focus -->
       <p id="processingText" tabindex="-1">Processing. Wait a moment...</p>
     </div>
-    <!-- Added tabindex="0" to the download link for focusability -->
-    <a id="downloadLink" class="download-link" tabindex="0" hidden>Download HDR Image (PNG)</a>
-    <div id="status"></div>
+    <a id="downloadLink" class="download-link" hidden>Download HDR Image (PNG)</a>
+    <div id="status" tabindex="-1"></div>
+
+    <!-- Collapsible About Section (centered) -->
+    <details id="aboutSection">
+      <summary>About</summary>
+      <p><strong>HDR and Bracketed Photos:</strong> HDR enhances details in both bright and dark areas, and bracketed images capture different exposures to cover a wide range of light.</p>
+      <p><strong>Simple HDR Merge:</strong> Clicking <em>Create HDR (simple)</em> merges your images into one balanced, natural-looking photo.</p>
+      <p><strong>HDR Merge with CLAHE:</strong> Clicking <em>Create HDR (CLAHE)</em> merges the images and applies CLAHE with a slight saturation boost for enhanced local contrast.</p>
+      <p><strong>Why Use This Tool?</strong> This free, browser-based solution lets you create high-quality HDR images without expensive software.</p>
+    </details>
   </div>
   <footer>
     <p style="font-size: 0.8em;">Created by <a href="https://github.com/luizdemarchi" target="_blank" style="text-decoration: underline;">Luiz de Marchi</a></p>
